@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    options {
+        skipStagesAfterUnstable()
+    }
+
+    tools {
+        maven '3.6.3'
+    }
+
+    stages {
+        stage('Checkout Source Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/alvarezt2-ops/gs-spring-boot.git'
+            }
+        }
+
+        stage('Check Workspace') {
+            steps {
+                sh 'pwd'
+                sh 'ls -R'
+            }
+        }
+
+        stage('Build and Test') {
+            steps {
+                dir('jenkins') {
+                    sh 'mvn clean test'
+                }
+            }
+        }
+
+        stage('Build Package') {
+            steps {
+                dir('jenkins') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                dir('jenkins') {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        always { echo 'Pipeline finished.' }
+        success { echo 'Build successful!' }
+        failure { echo 'Build failed!' }
+    }
+}
